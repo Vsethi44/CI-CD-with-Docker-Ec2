@@ -38,13 +38,24 @@ jobs:
      # Add a step to set up the SSH key
     - name: Set up SSH key
       run: |
-        echo "HOME directory: $HOME"  # Debug: Check $HOME directory
-        mkdir -p $HOME/.ssh  # Create .ssh directory in the home directory
-        echo "${{ secrets.EC2_PRIVATE_KEY }}" > $HOME/.ssh/my-keypair.pem  # Add private key
-        chmod 600 $HOME/.ssh/my-keypair.pem  # Set correct permissions
-        echo "SSH key setup complete."
-        ls -l $HOME/.ssh  # Debug: Verify the file was created
 
+        # Debug: Print HOME variable to ensure it's resolved
+        echo "HOME directory: $HOME"
+
+        # Create the .ssh directory and set up the SSH private key
+        mkdir -p $HOME/.ssh
+        echo "${{ secrets.EC2_PRIVATE_KEY }}" > $HOME/.ssh/my-keypair.pem
+        chmod 600 $HOME/.ssh/my-keypair.pem
+
+        # Add EC2 to known hosts to prevent verification prompt
+        echo "Adding EC2 host to known_hosts"
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> $HOME/.ssh/known_hosts
+
+        # Ensure permissions are set correctly on the known_hosts file
+        chmod 644 $HOME/.ssh/known_hosts
+
+        # Verify that the key and known_hosts file are set up correctly
+        ls -l $HOME/.ssh
 
     - name: Add EC2 to known hosts
       run: | 
