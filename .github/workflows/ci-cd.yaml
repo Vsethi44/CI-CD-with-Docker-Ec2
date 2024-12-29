@@ -36,9 +36,9 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/frontend-app
 
      # Add a step to set up the SSH key
+
     - name: Set up SSH key
       run: |
-
         # Debug: Print HOME variable to ensure it's resolved
         echo "HOME directory: $HOME"
 
@@ -51,11 +51,16 @@ jobs:
         echo "Adding EC2 host to known_hosts"
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> $HOME/.ssh/known_hosts
 
+        # Check the status of the known_hosts file and ensure permissions are correct
+        ls -l $HOME/.ssh
+        cat $HOME/.ssh/known_hosts
+
         # Ensure permissions are set correctly on the known_hosts file
         chmod 644 $HOME/.ssh/known_hosts
 
-        # Verify that the key and known_hosts file are set up correctly
+        # Verify permissions of the private key and known_hosts file
         ls -l $HOME/.ssh
+
 
     - name: Add EC2 to known hosts
       run: | 
