@@ -10,29 +10,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Step 1: Checkout Code
     - name: Checkout Code
       uses: actions/checkout@v3
 
+    # Step 2: Debugging - Print Environment
+    - name: Debug Environment
+      run: |
+        echo "HOME directory: $HOME"
+        ls -al $HOME
+
+    # Step 3: Set Up SSH Key
     - name: Set up SSH key
       run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/my-keypair.pem
-        chmod 600 ~/.ssh/my-keypair.pem
+        mkdir -p $HOME/.ssh
+        echo "${{ secrets.EC2_PRIVATE_KEY }}" > $HOME/.ssh/my-keypair.pem
+        chmod 600 $HOME/.ssh/my-keypair.pem
+        ls -al $HOME/.ssh
 
-    - name: Add EC2 to known hosts
+    # Step 4: Add EC2 Host to Known Hosts
+    - name: Add EC2 to Known Hosts
       run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> $HOME/.ssh/known_hosts
+        ls -al $HOME/.ssh
 
+    # Step 5: Deploy to AWS EC2
     - name: Deploy to AWS EC2
       env:
         HOST: ${{ secrets.EC2_HOST }}
         USER: ${{ secrets.EC2_USER }}
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       run: |
-        ssh -i ~/.ssh/my-keypair.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+        ssh -i $HOME/.ssh/my-keypair.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+        # Stop and remove any existing containers
         docker stop backend-app || true && docker rm backend-app || true
         docker stop frontend-app || true && docker rm frontend-app || true
-        docker run -d -p 5000:5000 --name backend-app ${{ secrets.DOCKER_USERNAME }}/backend-app
-        docker run -d -p 80:80 --name frontend-app ${{ secrets.DOCKER_USERNAME }}/frontend-app
+
+        # Run the new containers
+        docker run -d -p 5000:5000 --name backend-app $DOCKER_USERNAME/backend-app
+        docker run -d -p 80:80 --name frontend-app $DOCKER_USERNAME/frontend-app
         EOF
 
